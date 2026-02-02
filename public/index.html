@@ -57,10 +57,7 @@
         }
 
 
-        100% {
-            transform: scale(1);
-            opacity: 1;
-        }
+
 
         .meta-row {
             display: flex;
@@ -302,10 +299,23 @@
         const socket = io();
 
         // --- CONFIG & STATE ---
+        // --- CONFIG & STATE ---
         let config = {
-            primaryLayer: localStorage.getItem('v2_pri') || "16x9",
-            secondaryLayer: localStorage.getItem('v2_sec') || "Fill"
+            primaryLayer: "16x9",
+            secondaryLayer: "Fill"
         };
+
+        try {
+            if (typeof localStorage !== 'undefined') {
+                const p = localStorage.getItem('v2_pri');
+                const s = localStorage.getItem('v2_sec');
+                if (p) config.primaryLayer = p;
+                if (s) config.secondaryLayer = s;
+            }
+        } catch (e) {
+            console.warn("LocalStorage blocked (Private Mode?):", e);
+            // We can continue with defaults
+        }
 
         let state = {
             primaryName: "Waiting...",
@@ -543,8 +553,13 @@
             config.secondaryLayer = inpSec.value;
 
             // Persist
-            localStorage.setItem('v2_pri', config.primaryLayer);
-            localStorage.setItem('v2_sec', config.secondaryLayer);
+            try {
+                localStorage.setItem('v2_pri', config.primaryLayer);
+                localStorage.setItem('v2_sec', config.secondaryLayer);
+            } catch (e) {
+                console.error("Could not save settings:", e);
+                alert("Settings saved for this session only (Storage blocked).");
+            }
 
             closeSettings();
             // Reset state to force refresh

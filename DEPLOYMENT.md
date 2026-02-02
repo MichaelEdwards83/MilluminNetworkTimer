@@ -12,21 +12,16 @@ You must have **Node.js** installed on the machine that will run the timer scrip
    ```
    (It should verify a version number like `v18.x.x` or higher).
 
-## 2. Installation
-1. Create a folder (e.g., `WebTimer`) on the desktop.
-2. Copy the following files/folders from the project into it:
-   - `server.js`
-   - `package.json`
-   - `public/` (The entire folder)
-3. Open Terminal/Command Prompt and navigate to the folder:
-   ```bash
-   cd ~/Desktop/WebTimer
-   ```
-   *(Adjust path if you placed it elsewhere)*
-4. Install dependencies:
-   ```bash
-   npm install
-   ```
+## 2. Installation (Option A: Standalone Binary - Recommended)
+1.  Download the executable `web_timer-macos` (Mac) or `web_timer-win.exe` (Windows).
+2.  Place it in a folder on your Desktop (e.g., `WebTimer`).
+3.  **Done!** No other installation is needed.
+
+## 2. Installation (Option B: Source Code)
+1.  Install **Node.js** (LTS) from [nodejs.org](https://nodejs.org/).
+2.  Copy the project files (`server.js`, `package.json`, `public/`) to a folder.
+3.  Open Terminal/Command Prompt in that folder.
+4.  Run `npm install`.
 
 ## 3. Network Configuration
 To ensure Millumin can talk to the Timer, and other devices can view the Timer:

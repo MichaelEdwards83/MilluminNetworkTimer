@@ -8,7 +8,12 @@ A real-time web-based countdown timer for Millumin V4/V5, designed for network d
 - **Auto-Switching**: Automatically switches between a Primary Layer (e.g., 16x9 Content) and a Fallback Layer (e.g., Fill/Logo) when playback stops.
 - **Zero Configuration**: Auto-discovers Millumin on the network (Port 8002).
 
-## Quick Start
+## Quick Start (Pre-Built)
+1.  Download the executable for your OS (`web_timer-macos` or `web_timer-win.exe`).
+2.  Double-click to run.
+3.  Open `http://localhost:3000`.
+
+## Quick Start (Source)
 1.  **Install Node.js**.
 2.  Run `npm install`.
 3.  Run `node server.js`.

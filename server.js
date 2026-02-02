@@ -2,7 +2,8 @@ const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const { Server } = require('node-osc');
+// Fix for pkg: Point directly to CommonJS build to avoid export resolution errors
+const { Server } = require('node-osc/dist/lib/index.js');
 const path = require('path');
 
 // CONFIG
