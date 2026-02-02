@@ -388,12 +388,19 @@
                         updateDisplay();
                     }
                     else if (action === 'mediaStopped' || action === 'mediaPaused') {
+                        // Reset State for this layer
+                        state.layerTimes[layerName] = { current: 0, total: 0 };
+
                         if (slot === 'primary') {
                             state.primary.active = false;
                             state.primary.name = "Waiting...";
+                            state.primary.time = 0;
+                            state.primary.duration = 0;
                         } else {
                             state.fallback.active = false;
                             state.fallback.name = "Waiting...";
+                            state.fallback.time = 0;
+                            state.fallback.duration = 0;
                         }
                         updateDisplay();
                     }
