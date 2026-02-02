@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Millumin Timer V2</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #eee;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+            /* Prevent selection for cleaner kiosk feel */
+        }
+
+        #countdown {
+            font-size: 25vw;
+            font-weight: bold;
+            line-height: 1;
+            color: #4CAF50;
+            text-shadow: 0 0 50px rgba(76, 175, 80, 0.3);
+            margin-bottom: 2rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Color States */
+        /* Normal (Default Green defined in #countdown and #progress-fill) */
+
+        /* Warning (Orange) - Under 30s */
+        .state-warning #countdown {
+            color: #ff9800;
+            text-shadow: 0 0 50px rgba(255, 152, 0, 0.4);
+        }
+
+        .state-warning #progress-fill {
+            background-color: #ff9800;
+        }
+
+        /* Critical (Red) - Under 10s */
+        .state-critical #countdown {
+            color: #ff5252;
+            text-shadow: 0 0 60px rgba(255, 82, 82, 0.6);
+            /* animation removed as per user request */
+        }
+
+        .state-critical #progress-fill {
+            background-color: #ff5252;
+            box-shadow: 0 0 15px #ff5252;
+        }
+
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .meta-row {
+            display: flex;
+            width: 80%;
+            justify-content: space-around;
+            margin-bottom: 4rem;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .label {
+            font-size: 2vw;
+            color: #666;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .value {
+            font-size: 3.5vw;
+            font-weight: 500;
+            color: #ddd;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+        }
+
+        #status.connected {
+            background: #4CAF50;
+        }
+
+        /* V2 Settings Modal */
+        #settings-modal {
+            display: none;
+            /* Hidden by default */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #222;
+            border: 1px solid #444;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            color: #888;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .actions {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button.save {
+            background: #4CAF50;
+            color: #fff;
+        }
+
+        button.cancel {
+            background: transparent;
+            color: #aaa;
+        }
+
+        button.cancel:hover {
+            color: #fff;
+        }
+
+        /* Progress Bar */
+        #progress-container {
+            width: 80%;
+            height: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 2rem;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.2s linear;
+        }
+
+        /* Column Name */
+        #column-container {
+            margin-bottom: 0px;
+            text-align: center;
+        }
+
+        .label-small {
+            font-size: 1.5vw;
+            color: #666;
+            letter-spacing: 0.2em;
+            font-weight: 400;
+        }
+
+        #column-label {
+            font-size: 4vw;
+            color: #bbb;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 300;
+        }
+    </style>
+</head>
+
+<body id="app-body">
+    <div id="status" title="Disconnected"></div>
+
+    <div id="column-container">
+        <span class="label-small">COLUMN</span><br>
+        <span id="column-label">WAITING...</span>
+    </div>
+
+    <div id="countdown">00:00</div>
+
+    <div class="meta-row">
+        <div class="meta-item">
+            <span class="label">Total Duration</span>
+            <span id="total" class="value">00:00</span>
+        </div>
+        <!-- Media Name Removed -->
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progress-container">
+        <div id="progress-fill"></div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; justify-content:center; align-items:center;">
+        <div style="background:#222; padding:30px; border-radius:12px; width:500px; border:1px solid #444;">
+            <h2 style="margin-top:0;">Settings</h2>
+            <!-- Inputs -->
+            <div style="margin-bottom:15px;">
+                <label style="display:block; color:#888; margin-bottom:5px;">Primary Layer Name</label>
+                <input id="input-pri" type="text"
+                    style="width:100%; padding:8px; background:#333; border:none; color:white; border-radius:4px;"
+                    placeholder="e.g. 16x9">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="display:block; color:#888; margin-bottom:5px;">Fallback Layer Name</label>
+                <input id="input-sec" type="text"
+                    style="width:100%; padding:8px; background:#333; border:none; color:white; border-radius:4px;"
+                    placeholder="e.g. Fill">
+            </div>
+
+            <!-- Debug Section -->
+            <div style="margin-bottom:20px; background:#111; padding:10px; border-radius:4px;">
+                <label style="display:block; color:#aaa; font-size:12px; margin-bottom:5px;">DETECTED LAYERS (Last
+                    5)</label>
+                <div id="debug-layers" style="color:#0f0; font-family:monospace; font-size:12px; min-height:20px;">
+                    Waiting...</div>
+            </div>
+
+            <div style="margin-bottom:20px; background:#111; padding:10px; border-radius:4px;">
+                <label style="display:block; color:#aaa; font-size:12px; margin-bottom:5px;">LATEST OSC MESSAGE</label>
+                <div id="debug-osc"
+                    style="color:#ff0; font-family:monospace; font-size:11px; white-space:pre-wrap; word-break:break-all;">
+                    None</div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeSettings()"
+                    style="padding:8px 16px; background:#444; border:none; color:white; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button onclick="saveSettings()"
+                    style="padding:8px 16px; background:#2196F3; border:none; color:white; border-radius:4px; cursor:pointer;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Column Display -->
+    <div id="next-column-container" style="position:absolute; top:20px; left:20px; text-align:left; opacity:0.7;">
+        <div class="label-small" style="font-size:1vw;">NEXT</div>
+        <div id="next-column-label" style="font-size:2vw; color:#888;">--</div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // --- CONFIG & STATE ---
+        let config = {
+            primaryLayer: localStorage.getItem('v2_pri') || "16x9",
+            secondaryLayer: localStorage.getItem('v2_sec') || "Fill"
+        };
+
+        let state = {
+            primaryName: "Waiting...",
+            secondaryName: "Waiting...",
+            columnName: "Waiting...",
+            nextColumnName: "--",
+            layerTimes: {},
+            primary: { name: "Waiting...", time: 0, duration: 0, active: false },
+            fallback: { name: "Waiting...", time: 0, duration: 0, active: false },
+            currentActiveLayerKey: null,
+            // Sync top-level properties for compatibility
+            get primaryName() { return this.primary.name; },
+            set primaryName(val) { this.primary.name = val; },
+            get secondaryName() { return this.fallback.name; },
+            set secondaryName(val) { this.fallback.name = val; }
+        };
+        // Expose to window for debugging
+        window.socket = socket;
+        window.state = state;
+        window.config = config;
+
+        // --- DOM ---
+        const elBody = document.getElementById('app-body');
+        const elColumn = document.getElementById('column-label');
+        const elNextColumn = document.getElementById('next-column-label');
+        const elCountdown = document.getElementById('countdown');
+        const elTotal = document.getElementById('total');
+        const elStatus = document.getElementById('status');
+        const elModal = document.getElementById('settings-modal');
+        const inpPri = document.getElementById('input-pri');
+        const inpSec = document.getElementById('input-sec');
+        const elProgress = document.getElementById('progress-fill');
+
+        // --- SOCKET ---
+        socket.on('connect', () => { elStatus.classList.add('connected'); });
+        socket.on('disconnect', () => { elStatus.classList.remove('connected'); });
+
+        let knownLayers = new Set();
+        const elDebugLayers = document.getElementById('debug-layers');
+
+        socket.on('oscResult', (msg) => {
+            // MSG FORMAT: [address, arg1, arg2, ...]
+            const address = msg[0];
+
+            // DEBUG: Update UI Log
+            const elDebug = document.getElementById('debug-osc');
+            if (elDebug && address !== '/millumin/layer:16x9/media/time') {
+                elDebug.textContent = address + " " + JSON.stringify(msg.slice(1));
+            }
+
+            console.log("OSC RX:", address, msg);
+
+            // --- 1. COLUMN NAME (Native) ---
+            if (address === '/millumin/board/launchedColumn') {
+                if (msg.length >= 3) {
+                    state.columnName = msg[2];
+                    updateDisplay();
+                }
+            }
+
+            // --- 2. NEXT COLUMN (Hidden API) ---
+            if (address === '/millumin/info') {
+                const eventType = msg[1];
+                if (eventType === 'board/launchedColumn') {
+                    if (msg.length >= 6) {
+                        state.nextColumnName = msg[5];
+                        state.columnName = msg[4]; // Sync current
+                        updateDisplay();
+                    }
+                }
+            }
+
+            // --- 3. LAYER TIMER & MEDIA NAME ---
+            const layerRegex = /^\/millumin\/layer:([^\/]+)\/(.*)/;
+            const match = address.match(layerRegex);
+
+            if (match) {
+                const layerName = match[1];
+                const action = match[2];
+
+                // DEBUG: Add to Known Layers
+                if (!knownLayers.has(layerName)) {
+                    knownLayers.add(layerName);
+                    if (elDebugLayers) {
+                        elDebugLayers.innerText = Array.from(knownLayers).join(", ");
+                    }
+                }
+
+                // Map Layer to UI Slot
+                let slot = null;
+                if (layerName === config.primaryLayer) slot = 'primary';
+                else if (layerName === config.secondaryLayer) slot = 'secondary';
+
+                if (slot) {
+                    if (action === 'mediaStarted') {
+                        const mName = msg[1];
+                        if (slot === 'primary') {
+                            state.primary.name = mName;
+                            state.primary.active = true;
+                        } else {
+                            state.fallback.name = mName;
+                            state.fallback.active = true;
+                        }
+                        updateDisplay();
+                    }
+                    else if (action === 'mediaStopped' || action === 'mediaPaused') {
+                        if (slot === 'primary') {
+                            state.primary.active = false;
+                            state.primary.name = "Waiting...";
+                        } else {
+                            state.fallback.active = false;
+                            state.fallback.name = "Waiting...";
+                        }
+                        updateDisplay();
+                    }
+                    else if (action === 'media/time') {
+                        const cur = msg[1];
+                        const tot = msg[2] || 0;
+
+                        state.layerTimes[layerName] = { current: cur, total: tot };
+
+                        // Update Slot State
+                        if (slot === 'primary') {
+                            state.primary.time = cur;
+                            state.primary.duration = tot;
+                            // Late Join Fix
+                            if (!state.primary.active && tot > 0) {
+                                state.primary.active = true;
+                                if (state.primary.name === "Waiting...") state.primary.name = "Playing...";
+                            }
+                        } else {
+                            state.fallback.time = cur;
+                            state.fallback.duration = tot;
+                            if (!state.fallback.active && tot > 0) {
+                                state.fallback.active = true;
+                                if (state.fallback.name === "Waiting...") state.fallback.name = "Playing...";
+                            }
+                        }
+
+                        // Immediate UI Refresh if active
+                        if (state.currentActiveLayerKey === layerName) {
+                            updateTimer();
+                        }
+                    }
+                }
+            }
+        });
+
+        // Initialize logic on load
+        updateDisplay();
+
+        // --- CORE LOGIC ---
+        function updateDisplay() {
+            // Column Logic
+            elColumn.innerText = state.columnName;
+            elNextColumn.innerText = state.nextColumnName;
+
+            // Priority Check
+            let activeLayerKey = config.secondaryLayer; // Default to fallback
+
+            /* 
+               CRITICAL FALLBACK LOGIC:
+               If Primary is Active AND has a Name (that isn't Waiting), use Primary.
+               Otherwise use Secondary.
+            */
+            const isPrimaryValid = state.primary.active && state.primary.name !== "Waiting..." && state.primary.name !== "undefined";
+
+            if (isPrimaryValid) {
+                activeLayerKey = config.primaryLayer;
+            } else {
+                activeLayerKey = config.secondaryLayer;
+            }
+
+            // Store active key for Timer lookup
+            state.currentActiveLayerKey = activeLayerKey;
+
+            updateTimer();
+        }
+
+        function updateTimer() {
+            const targetKey = state.currentActiveLayerKey;
+            const timeData = state.layerTimes[targetKey];
+
+            if (timeData) {
+                const remaining = Math.max(0, timeData.total - timeData.current);
+                elCountdown.innerText = formatTime(remaining);
+                elTotal.innerText = formatTime(timeData.total);
+
+                // Progress Bar
+                if (timeData.total > 0) {
+                    const pct = (timeData.current / timeData.total) * 100;
+                    elProgress.style.width = pct + '%';
+                } else {
+                    elProgress.style.width = '0%';
+                }
+
+                // Color Logic
+                elBody.classList.remove('state-warning', 'state-critical');
+
+                if (remaining <= 10 && remaining > 0) {
+                    elBody.classList.add('state-critical'); // Red
+                } else if (remaining <= 30 && remaining > 0) {
+                    elBody.classList.add('state-warning'); // Orange
+                }
+            }
+        }
+
+        function formatTime(s) {
+            if (s < 0 || isNaN(s)) return "00:00";
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m < 10 ? '0' : ''}${m}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        // --- SETTINGS MENU ---
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); // Block standard menu
+            openSettings();
+        });
+
+        function openSettings() {
+            inpPri.value = config.primaryLayer;
+            inpSec.value = config.secondaryLayer;
+            elModal.style.display = 'flex';
+        }
+
+        function closeSettings() {
+            elModal.style.display = 'none';
+        }
+
+        /* Expose to Global scope for onclick */
+        window.closeSettings = closeSettings;
+        window.saveSettings = function () {
+            config.primaryLayer = inpPri.value;
+            config.secondaryLayer = inpSec.value;
+
+            // Persist
+            localStorage.setItem('v2_pri', config.primaryLayer);
+            localStorage.setItem('v2_sec', config.secondaryLayer);
+
+            closeSettings();
+            // Reset state to force refresh
+            state.layerTimes = {};
+            updateDisplay();
+            alert("Saved!");
+        };
+
+    </script>
+</body>
+
+</html>
