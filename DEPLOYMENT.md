@@ -13,9 +13,13 @@ You must have **Node.js** installed on the machine that will run the timer scrip
    (It should verify a version number like `v18.x.x` or higher).
 
 ## 2. Installation (Option A: Standalone Binary - Recommended)
-1.  Download the executable `web_timer-macos` (Mac) or `web_timer-win.exe` (Windows).
+1.  Download the executable for your system:
+    - **Mac**: `web_timer-macos-x64`
+    - **Windows**: `web_timer-win-x64.exe`
+    - **Raspberry Pi (Linux ARM64)**: `web_timer-linux-arm64`
 2.  Place it in a folder on your Desktop (e.g., `WebTimer`).
-3.  **Done!** No other installation is needed.
+3.  **Extra Step for Mac/Linux**: Open Terminal, type `chmod +x ` and drag the file into the terminal (or type the file path), then press Enter to make it executable.
+4.  **Done!** No other installation is needed. You can run the executable directly.
 
 ## 2. Installation (Option B: Source Code)
 1.  Install **Node.js** (LTS) from [nodejs.org](https://nodejs.org/).
